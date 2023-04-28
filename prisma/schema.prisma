@@ -16,4 +16,10 @@ model database {
   situacao      String?
   nomeDestino   String?
   dataRealizado DateTime?
+  dataCriado    DateTime?
+}
+
+model databasebackup {
+  id Int @id @default(autoincrement())
+  
 }

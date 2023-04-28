@@ -12,11 +12,11 @@ export const runBackup = async () => {
             password: process.env.DB_PASSWORD
         })
         connection.connect()
-        const databases = ['database1', 'database2', 'database3'] 
+        const databases = ['database1', 'database2', 'database3']
 
-        const date = new Date().toISOString().replace(/:/g, '-') 
+        const date = new Date().toISOString().replace(/:/g, '-')
         databases.forEach(database => {
-            const filename = `${database}_${date}.sql` 
+            const filename = `${database}_${date}.sql`
             exec(`mysqldump --single-transaction --quick --lock-tables=false --host=${connection.config.host} --user=${connection.config.user} --password=${connection.config.password} ${database} > ${filename}`, (error, stdout, stderr) => {
                 if (error) {
                     console.error(`Erro ao gerar dump para o banco de dados ${database}: ${error.message}`)
