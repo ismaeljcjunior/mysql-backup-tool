@@ -10,16 +10,16 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-model database {
-  id            Int       @id @default(autoincrement())
-  nome          String?
-  situacao      String?
-  nomeDestino   String?
-  dataRealizado DateTime?
-  dataCriado    DateTime?
+model db {
+  id         Int       @id @default(autoincrement())
+  nome       String?
+  dataCriado DateTime? @default(now())
 }
 
 model databasebackup {
-  id Int @id @default(autoincrement())
-  
+  id            Int       @id @default(autoincrement())
+  nome          String?
+  nomeDestino   String?
+  dataRealizado DateTime? @updatedAt
+  dataCriado    DateTime? @default(now())
 }

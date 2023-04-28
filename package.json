@@ -4,16 +4,21 @@
   "main": "index.js",
   "license": "MIT",
   "devDependencies": {
+    "@types/node": "^18.16.2",
+    "@types/node-cron": "^3.0.7",
     "@types/node-schedule": "^2.1.0",
     "nodemon": "^2.0.22",
     "prisma": "^4.13.0",
+    "ts-node": "^10.9.1",
     "tsup": "^6.7.0",
     "typescript": "^5.0.4"
   },
   "dependencies": {
     "@prisma/client": "^4.13.0",
+    "moment": "^2.29.4",
     "mysql2": "^3.2.4",
     "mysqldump": "^3.2.0",
+    "node-cron": "^3.0.2",
     "node-schedule": "^2.1.1",
     "winston": "^3.8.2"
   },
