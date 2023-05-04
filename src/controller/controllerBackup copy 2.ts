@@ -5,9 +5,9 @@ import { IDatabaseResultProps } from '../interfaces/interfaces'
 
 import path from 'path'
 
-import * as fs from 'fs';
-import * as mysql from 'mysql2';
-import * as mysqldump from 'mysqldump';
+import * as fs from 'fs'
+import * as mysql from 'mysql2'
+import * as mysqldump from 'mysqldump'
 
 const prisma = new PrismaClient()
 const connection = mysql.createConnection({
@@ -41,18 +41,18 @@ export const exportDump = async (listDatabases: any) => {
             const options = {
                 database: database,
                 dest: `${database}.sql`
-            };
+            }
 
             try {
                 // Call mysqldump with the options
                 const dump = await mysqldump({
                     connection: connection,
                     ...options
-                });
-                fs.writeFileSync(`${database}.sql`, dump);
-                console.log(`Database ${database} dumped successfully`);
+                })
+                fs.writeFileSync(`${database}.sql`, dump)
+                console.log(`Database ${database} dumped successfully`)
             } catch (err) {
-                console.error(`Error dumping database ${database}:`, err);
+                console.error(`Error dumping database ${database}:`, err)
             }
         }
     } catch (err) {
