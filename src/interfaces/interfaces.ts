@@ -1,3 +1,4 @@
 export interface IDatabaseResultProps {
-    Database: string;
+    [x: string]: any;
+    SCHEMA_NAME: string;
 }
