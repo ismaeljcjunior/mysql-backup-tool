@@ -5,7 +5,6 @@ import { IDatabaseResultProps } from '../interfaces/interfaces'
 import fs from 'fs'
 import path from 'path'
 
-
 const prisma = new PrismaClient()
 const connection = mysql.createConnection({
     host: process.env.DB_HOST,
@@ -23,7 +22,7 @@ export const runListDatabases = async () => {
             console.log('Bancos de dados disponíveis:')
             const databases = results.map(result => result.Database)
             console.log(databases)
-            await createInData(databases)
+            // await createInData(databases)
             await runBackup(databases)
             connection.end()
         })
@@ -31,41 +30,39 @@ export const runListDatabases = async () => {
         console.log(err)
     }
 }
-export const createInData = async (databases: any) => {
-    try {
+// export const createInData = async (databases: any) => {
+//     try {
 
-        const listSaveName: any = await prisma.$queryRawUnsafe(`SELECT * FROM db`)
-        for (const database of databases) {
-            let encontrado = false
-            for (const dbSalvo of listSaveName) {
-                if (database === dbSalvo.nome) {
-                    encontrado = true
-                    break
-                }
-            }
-            if (!encontrado) {
-                await prisma.$queryRawUnsafe(`INSERT db (nome) VALUES ('${database}');`)
-            } else {
-                console.log('banco ja criado', database)
-            }
-        }
-    } catch (err) {
-        console.log(err)
-    }
-}
+//         const listSaveName: any = await prisma.$queryRawUnsafe(`SELECT * FROM db`)
+//         for (const database of databases) {
+//             let encontrado = false
+//             for (const dbSalvo of listSaveName) {
+//                 if (database === dbSalvo.nome) {
+//                     encontrado = true
+//                     break
+//                 }
+//             }
+//             if (!encontrado) {
+//                 await prisma.$queryRawUnsafe(`INSERT db (nome) VALUES ('${database}');`)
+//             } else {
+//                 console.log('banco ja criado', database)
+//             }
+//         }
+//     } catch (err) {
+//         console.log(err)
+//     }
+// }
 export const runBackup = async (databases: any) => {
+    console.log('backup', databases)
     try {
-        connection.connect()
-
-        const databases = ['db_sac', 'db_eventos_nvr']
+        const listDatabases = databases()
         const date = new Date().toISOString().replace(/:/g, '-')
-
         const backupDir = path.join(__dirname, '..', 'backupDUMPS')
 
         if (!fs.existsSync(backupDir)) {
             fs.mkdirSync(backupDir)
         }
-        const dumpPromises = databases.map((database) => {
+        const dumpPromises = listDatabases.map((database: any) => {
             const filename = path.join(backupDir, `${database}_${date}.sql`)
             return new Promise<void>((resolve, reject) => {
                 exec(`mysqldump --single-transaction --quick --lock-tables=false --host=${connection.config.host} --user=${connection.config.user} --password=${connection.config.password} ${database} > ${filename}`, (error, stdout, stderr) => {
@@ -78,15 +75,8 @@ export const runBackup = async (databases: any) => {
                 })
             })
         })
-
-        Promise.all(dumpPromises)
-            .then(() => {
-                connection.end()
-            })
-            .catch((error) => {
-                console.error(error)
-                connection.end()
-            })
+        await Promise.all(dumpPromises)
+        connection.end()
     } catch (err) {
         console.log(`Error: ${err}`)
     }

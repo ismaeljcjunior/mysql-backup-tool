@@ -1,82 +1,58 @@
-import fs from 'fs-extra'
-import { exec } from 'child_process'
-import mysqldump from 'mysqldump'
 import { PrismaClient } from '@prisma/client'
+import mysql from 'mysql2'
+import { exec } from 'child_process'
 import { IDatabaseResultProps } from '../interfaces/interfaces'
+import fs from 'fs'
 import path from 'path'
-import { format } from 'date-fns'
 
 const prisma = new PrismaClient()
-const spawn = require('child_process').spawn
+const connection = mysql.createConnection({
+    host: process.env.DB_HOST,
+    user: process.env.DB_USER,
+    password: process.env.DB_PASSWORD
+})
 
-export const getDatabase = async () => {
-
+export const runListDatabases = async () => {
     try {
-        const result: IDatabaseResultProps = await prisma.$queryRaw`SELECT schema_name FROM information_schema.schemata`
-        const databaseNames = result.map((item: { SCHEMA_NAME: any }) => item.SCHEMA_NAME)
-
-        console.log(`Consulta bruta executada: SHOW DATABASES`)
-        console.log(`Resultado:`, databaseNames)
-    } catch (e) {
-        console.log(`Erro: ${e}`)
+        connection.query('SHOW DATABASES', async (error, results: IDatabaseResultProps[], fields) => {
+            if (error) {
+                console.error(`Erro ao listar bancos de dados: ${error.message}`)
+                return
+            }
+            console.log('Bancos de dados disponíveis:')
+            const databases = results.map(result => result.Database)
+            console.log(databases)
+            databases.forEach(async (database: any) => {
+                await runBackup(database)
+            })
+            connection.end()
+        })
+    } catch (err) {
+        console.log(err)
     }
-
 }
-export const runBackup = async () => {
-    const now = new Date()
-    const dbName = 'db_notificacoes'
-    const backupDir = path.join(__dirname, '..', 'backupdump', dbName)
-    const maxBackups = 10
-    const dumpFileName = `${format(now, 'yyyy_MM_dd_HH_mm_ss')}.dump.sql`
-    const dumpFilePath = path.join(backupDir, dumpFileName)
 
-    const writeStream = fs.createWriteStream(dumpFilePath)
-    const dump = spawn('mysqldump', ['-u', 'root', '-p123456', dbName])
-
+export const runBackup = async (database: string) => {
+    console.log(`backup do banco de dados ${database}`)
     try {
-        // Cria a pasta de backup com o nome do banco de dados
-        await fs.ensureDir(backupDir)
+        const date = new Date().toISOString().replace(/:/g, '-')
+        const backupDir = path.join(__dirname, '..', 'backupDUMPS')
 
-        // Obtém a lista de arquivos de backup existentes
-        const backupFiles = await fs.readdir(backupDir)
-
-        // Se houver mais de 10 arquivos, exclui o mais antigo
-        if (backupFiles.length >= maxBackups) {
-            backupFiles.sort()
-            const oldestBackup = backupFiles[0]
-            const oldestBackupPath = path.join(backupDir, oldestBackup)
-            await fs.unlink(oldestBackupPath)
+        if (!fs.existsSync(backupDir)) {
+            fs.mkdirSync(backupDir)
         }
-
-        // Cria o nome do arquivo de backup usando a data/hora atual
-        const dateStr = new Date().toISOString().replace(/:/g, '-')
-        const dumpFileName = `${dateStr}.dump.sql`
-        const dumpFilePath = path.join(backupDir, dumpFileName)
-
-        // Cria o arquivo de backup
-        const writeStream = fs.createWriteStream(dumpFilePath)
-        const dump = spawn('mysqldump', [
-            '-u',
-            'root',
-            '-p123456',
-            dbName,
-        ])
-        dump.stdout.pipe(writeStream)
+        const filename = path.join(backupDir, `${database}_${date}.sql`)
         await new Promise<void>((resolve, reject) => {
-            dump.on('exit', (code: any) => {
-                if (code === 0) {
-                    resolve()
+            exec(`mysqldump --single-transaction --quick --lock-tables=false --host=${connection.config.host} --user=${connection.config.user} --password=${connection.config.password} ${database} > ${filename}`, (error, stdout, stderr) => {
+                if (error) {
+                    reject(`Erro ao gerar dump para o banco de dados ${database}: ${error.message}`)
                 } else {
-                    reject(new Error(`mysqldump exited with code ${code}`))
+                    console.log(`Dump do banco de dados ${database} gerado com sucesso`)
+                    resolve()
                 }
             })
-            dump.on('error', (err: any) => {
-                reject(err)
-            })
         })
-
-        console.log(`Backup completed: ${dumpFileName}`)
-    } catch (e) {
-        console.error(`Error during backup: ${e}`)
+    } catch (err) {
+        console.log(`Error: ${err}`)
     }
 }
