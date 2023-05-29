@@ -1,15 +1,17 @@
 import dotenv from 'dotenv'
 dotenv.config()
 import nodeSchedule from 'node-schedule'
-import { runBackup, runListDatabases } from './controller/controllerBackup'
+import { runBackup } from './controller/controllerBackupJSON'
+
 
 const main = async () => {
     try {
-        await runListDatabases()
+        await runBackup()
     } catch (err) {
         console.log(`Error: ${err}`)
     }
 }
-const job = nodeSchedule.scheduleJob('0-59/30  * * * * *', () => {
-    main()
-})
+main()
+// const job = nodeSchedule.scheduleJob('0-59/59  * * * * *', () => {
+//     main()
+// })
